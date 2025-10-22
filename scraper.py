@@ -24,7 +24,7 @@ def extract_next_links(url, resp):
     for a in soup.find_all('a', href=True):
         href = a['href']
         href = urldefrag(href)[0]  
-        if href not in links:
+        if href not in links and href != url:
             links.append(href)
     return links
 
