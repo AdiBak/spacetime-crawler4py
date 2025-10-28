@@ -1,8 +1,16 @@
+from collections import Counter
 import re
+import sys
 from urllib.parse import urlparse, urldefrag
 from bs4 import BeautifulSoup
 
+wordFrequencies = dict()
+
 def scraper(url, resp):
+    soup = BeautifulSoup(resp.raw_response.content, 'html.parser')
+    text = soup.get_text()
+    updateWordFrequencies(tokenize(text))
+    writeFrequencies("frequencies.txt", 50)
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
 
@@ -51,3 +59,46 @@ def is_valid(url):
     except TypeError:
         print ("TypeError for ", parsed)
         raise
+
+
+def tokenize(text):
+    tokens = []
+    word = ''
+    for letter in text:
+        if (letter.isascii() and letter.isalnum()):
+            word += letter.lower()
+        else:
+            if len(word):
+                tokens.append(word)
+                word = ''
+    if len(word):
+        tokens.append(word)
+    return tokens
+
+
+def updateWordFrequencies(tokens):
+    for token in tokens:
+        if isStopWord(token):
+            continue
+        if token in wordFrequencies:
+            wordFrequencies[token] += 1
+        else:
+            wordFrequencies[token] = 1
+    return wordFrequencies
+
+def writeFrequencies(file, n=-1):
+    with open(file, "w", encoding="utf-8") as sys.stdout:
+        printFrequencies(wordFrequencies, n)
+
+
+def printFrequencies(frequencies, n=-1):
+    frequencies = dict(sorted(frequencies.items(), key=lambda item: item[1], reverse=True))
+    for key, value in frequencies.items():
+        print(f"{key} {value}")
+        n -= 1
+        if n == 0:
+            break
+
+def isStopWord(word):
+    stopWords = {'some', 'not', "we've", 'few', 'hers', 'should', "we're", 'was', 'ought', "they're", 'herself', "i'll", 'she', "she'd", 'do', 'in', 'himself', 'off', "here's", 'which', 'of', 'my', 'we', "don't", 'because', 'or', 'the', 'other', "there's", 'own', 'what', 'both', 'with', 'themselves', 'myself', 'all', 'into', "doesn't", "it's", "how's", 'once', 'between', 'by', 'down', "you'll", 'been', 'that', 'same', 'our', 'whom', 'ours', "they'll", 'am', "isn't", 'to', 'his', 'when', "aren't", 'cannot', 'very', 'her', 'you', 'have', 'most', 'if', 'a', 'are', 'it', 'how', 'did', "let's", 'at', 'does', "can't", 'has', 'here', "didn't", "they've", 'before', 'until', 'under', 'and', 'as', 'why', 'could', 'through', 'so', 'me', 'again', 'ourselves', "he's", "where's", "weren't", 'them', 'further', 'but', 'more', 'i', 'for', 'theirs', 'be', 'this', "she'll", 'your', "he'll", "you're", "shouldn't", 'is', "haven't", "i'm", "i've", 'him', 'no', 'being', 'those', 'on', 'below', 'then', 'were', "you've", "you'd", 'nor', 'doing', "we'd", "she's", "that's", 'itself', 'while', 'such', "when's", "shan't", 'too', "what's", 'during', 'who', 'yourself', 'against', "i'd", 'above', 'after', "mustn't", 'there', 'about', 'yours', 'from', 'over', 'out', 'any', 'they', "won't", 'each', 'up', "hasn't", 'only', 'an', "couldn't", "he'd", 'where', 'having', "wouldn't", 'yourselves', "who's", 'its', 'their', "wasn't", 'had', "they'd", 'would', "why's", 'he', 'than', "hadn't", "we'll", 'these'}
+    return word in stopWords
