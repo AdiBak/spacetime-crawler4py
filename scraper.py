@@ -50,7 +50,7 @@ def extract_next_links(url, resp):
 
      tokenized = tokenize(text)
      updateWordFrequencies(tokenized)
-     writeFrequencies("frequencies.txt", -1)
+     writeFrequencies("frequencies.txt", 50)
      global longestPage
 
     
