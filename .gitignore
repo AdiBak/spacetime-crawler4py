@@ -108,3 +108,8 @@ venv.bak/
 
 *.full.py
 *.shelve
+
+#txt files
+frequencies.txt
+unique_pages.txt
+longest_page.txt
