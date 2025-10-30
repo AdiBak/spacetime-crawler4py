@@ -54,8 +54,9 @@ def extract_next_links(url, resp):
      global longestPage
 
     
-     longestPage = max(longestPage, len(tokenized))
-     writeLongestPageLength("longest_page.txt", url, longestPage, text)
+     if len(tokenized) > longestPage:
+        longestPage = len(tokenized)
+        writeLongestPageLength("longest_page.txt", url, longestPage, text)
 
 
      if len(words) < 50:
