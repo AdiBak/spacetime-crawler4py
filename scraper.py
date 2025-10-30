@@ -97,7 +97,7 @@ def is_valid(url):
         ]):
             return False
 
-        if re.search(r"(calendar|ical|tribe|event|events|feed|share|login|signup|~eppstein/pix)", parsed.path.lower()):
+        if re.search(r"(calendar|ical|tribe|event|events|feed|share|login|signup|doku|~eppstein/pix)", parsed.path.lower()):
             return False
 
         if parsed.query and parsed.query.count('=') > 5:
