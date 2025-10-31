@@ -14,13 +14,13 @@ longestPage = 0
 logger = get_logger("scraper")
 
 def scraper(url, resp):
-    seen_urls.add(url)
-    writeUniquePageCounter("unique_pages.txt")
-
-    links = extract_next_links(url, resp)
-    valid_links = [link for link in links if is_valid(link)]
-    return valid_links
-
+    try:
+        links = extract_next_links(url, resp)
+        valid_links = [link for link in links if is_valid(link)]
+        return valid_links
+    except Exception:
+        print('Error scraping', url)
+        return []
 
 
 def extract_next_links(url, resp):
@@ -34,58 +34,59 @@ def extract_next_links(url, resp):
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
 
-     if resp.status is None or resp.status < 200 or resp.status >= 400:
+    try:
+        if resp.status is None or resp.status < 200 or resp.status >= 400:
+            return []
+
+        if not resp.raw_response or not resp.raw_response.content:
+            return []
+
+        if len(resp.raw_response.content) > 5_000_000:
+            return []
+
+        soup = BeautifulSoup(resp.raw_response.content, 'html.parser')
+        if soup.contains_replacement_characters:
+            return []
+
+        text = soup.get_text(separator=' ', strip=True)
+        words = text.split()
+
+        
+        global longestPage
+        longestPage = logPageInfo(text, url, longestPage)
+
+
+        if len(words) < 50:
+            return []
+
+        text_hash = hashlib.md5(text.encode('utf-8')).hexdigest()
+        if text_hash in seen_text_hashes:
+            return []
+        seen_text_hashes.add(text_hash)
+        
+        links = set()
+        for tag in soup.find_all('a', href=True):
+            new_url = urljoin(url, tag['href'])
+            new_url = urldefrag(new_url)[0]  
+            if not new_url in seen_urls:
+                links.add(new_url)
+
+        return list(links)
+
+    except Exception as e:
+        print("Error for ", url)
         return []
-
-     if not resp.raw_response or not resp.raw_response.content:
-        return []
-
-     if len(resp.raw_response.content) > 5_000_000:
-        return []
-
-     soup = BeautifulSoup(resp.raw_response.content, 'html.parser')
-
-     text = soup.get_text(separator=' ', strip=True)
-     words = text.split()
-
-     tokenized = tokenize(text)
-     updateWordFrequencies(tokenized)
-     writeFrequencies("frequencies.txt", 50)
-     global longestPage
-
-    
-     if len(tokenized) > longestPage:
-        longestPage = len(tokenized)
-        writeLongestPageLength("longest_page.txt", url, longestPage, text)
-
-
-     if len(words) < 50:
-        return []
-
-     text_hash = hashlib.md5(text.encode('utf-8')).hexdigest()
-     if text_hash in seen_text_hashes:
-        return []
-     seen_text_hashes.add(text_hash)
-     
-     links = set()
-     for tag in soup.find_all('a', href=True):
-        new_url = urljoin(url, tag['href'])
-        new_url = urldefrag(new_url)[0]  
-        if not new_url in seen_urls:
-            links.add(new_url)
-
-     return list(links)
 
 def is_valid(url):
     # Decide whether to crawl this url or not. 
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
-     try:
+    try:
         parsed = urlparse(url)
 
         if parsed.scheme not in {"http", "https"}:
             return False
-
+        
         if not parsed.hostname or not parsed.hostname.endswith(
             ("ics.uci.edu", "cs.uci.edu", "informatics.uci.edu", "stat.uci.edu")
         ):
@@ -93,7 +94,9 @@ def is_valid(url):
 
         if any(sub in parsed.netloc for sub in [
             "wics.ics.uci.edu", 
+            "www.physics.uci.edu"
             "ngs.ics.uci.edu",
+            "www.cecs.uci.edu"
         ]):
             return False
 
@@ -121,9 +124,22 @@ def is_valid(url):
 
         return True
 
-     except Exception:
+    except Exception:
         print("Error for ", url)
-        raise
+        return False
+
+
+def logPageInfo(text, url, longestPage):
+    seen_urls.add(url)
+    writeUniquePageCounter("unique_pages.txt")
+    tokenized = tokenize(text)
+    updateWordFrequencies(tokenized)
+    writeFrequencies("frequencies.txt", 50)
+    if len(tokenized) > longestPage:
+        longestPage = len(tokenized)
+        writeLongestPageLength("longest_page.txt", url, longestPage, text)
+    return longestPage
+
 
 
 def tokenize(text):
