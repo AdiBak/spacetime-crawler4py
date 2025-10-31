@@ -14,13 +14,14 @@ longestPage = 0
 logger = get_logger("scraper")
 subdomains = dict()
 
+
 def scraper(url, resp):
     try:
         links = extract_next_links(url, resp)
         valid_links = [link for link in links if is_valid(link)]
         return valid_links
     except Exception:
-        print('Error scraping', url)
+        print("Error scraping", url)
         return []
 
 
@@ -45,30 +46,28 @@ def extract_next_links(url, resp):
         if len(resp.raw_response.content) > 5_000_000:
             return []
 
-        soup = BeautifulSoup(resp.raw_response.content, 'html.parser')
+        soup = BeautifulSoup(resp.raw_response.content, "html.parser")
         if soup.contains_replacement_characters:
             return []
 
-        text = soup.get_text(separator=' ', strip=True)
+        text = soup.get_text(separator=" ", strip=True)
         words = text.split()
 
-        
         global longestPage
         longestPage = logPageInfo(text, url, longestPage)
-
 
         if len(words) < 50:
             return []
 
-        text_hash = hashlib.md5(text.encode('utf-8')).hexdigest()
+        text_hash = hashlib.md5(text.encode("utf-8")).hexdigest()
         if text_hash in seen_text_hashes:
             return []
         seen_text_hashes.add(text_hash)
-        
+
         links = set()
-        for tag in soup.find_all('a', href=True):
-            new_url = urljoin(url, tag['href'])
-            new_url = urldefrag(new_url)[0]  
+        for tag in soup.find_all("a", href=True):
+            new_url = urljoin(url, tag["href"])
+            new_url = urldefrag(new_url)[0]
             if not new_url in seen_urls:
                 links.add(new_url)
 
@@ -78,8 +77,9 @@ def extract_next_links(url, resp):
         print("Error for ", url)
         return []
 
+
 def is_valid(url):
-    # Decide whether to crawl this url or not. 
+    # Decide whether to crawl this url or not.
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
     try:
@@ -87,24 +87,37 @@ def is_valid(url):
 
         if parsed.scheme not in {"http", "https"}:
             return False
-        
-        if not parsed.hostname or not parsed.hostname.endswith(
-            ("ics.uci.edu", "cs.uci.edu", "informatics.uci.edu", "stat.uci.edu")
+
+        if parsed.hostname.endswith("physics.uci.edu"):
+            print("sdiohfdsiofhdsiofhdsiohdsihofds\n\n\n\n\n\n")
+
+        if not parsed.hostname or (
+            not parsed.hostname.endswith(
+                (".ics.uci.edu", ".cs.uci.edu", ".informatics.uci.edu", ".stat.uci.edu")
+            )
+            and not parsed.hostname
+            in {"ics.uci.edu", "cs.uci.edu", "informatics.uci.edu", "stat.uci.edu"}
         ):
             return False
 
-        if any(sub in parsed.netloc for sub in [
-            "wics.ics.uci.edu", 
-            "www.physics.uci.edu",
-            "ngs.ics.uci.edu",
-            "www.cecs.uci.edu"
-        ]):
+        if any(
+            sub in parsed.netloc
+            for sub in [
+                "wics.ics.uci.edu",
+                # "www.physics.uci.edu",
+                "ngs.ics.uci.edu",
+                "www.cecs.uci.edu",
+            ]
+        ):
             return False
 
-        if re.search(r"(calendar|ical|tribe|event|events|feed|share|login|signup|doku|~eppstein/pix)", parsed.path.lower()):
+        if re.search(
+            r"(calendar|ical|tribe|event|events|feed|share|login|signup|doku|~eppstein/pix)",
+            parsed.path.lower(),
+        ):
             return False
 
-        if parsed.query and parsed.query.count('=') > 5:
+        if parsed.query and parsed.query.count("=") > 5:
             return False
 
         # if len(url) > 200:
@@ -155,10 +168,14 @@ def updateSubdomains(hostname):
     else:
         subdomains[hostname] = 1
 
+
 def printSubdomains():
-    frequencies = dict(sorted(subdomains.items(), key=lambda item: item[1], reverse=True))
+    frequencies = dict(
+        sorted(subdomains.items(), key=lambda item: item[1], reverse=True)
+    )
     for key, value in frequencies.items():
         print(f"{key}, {value}")
+
 
 def writeSubdomains(file):
     with open(file, "w", encoding="utf-8") as f:
@@ -168,11 +185,13 @@ def writeSubdomains(file):
 
 def tokenize(text):
     tokens = []
-    word = ''
+    word = ""
     for i, letter in enumerate(text):
-        if (letter.isascii() and letter.isalnum()) or (letter == "'" or letter == "-" or letter == "’"):
+        if (letter.isascii() and letter.isalnum()) or (
+            letter == "'" or letter == "-" or letter == "’"
+        ):
             word += letter.lower()
-        elif (letter == "." and i < len(text) - 1 and text[i + 1] != " "):
+        elif letter == "." and i < len(text) - 1 and text[i + 1] != " ":
             word += letter
         else:
             if len(word) >= 2:
@@ -180,7 +199,7 @@ def tokenize(text):
                     if letter.isalnum():
                         tokens.append(word)
                         break
-                word = ''
+                word = ""
     if len(word) >= 2:
         tokens.append(word)
     return tokens
@@ -196,23 +215,201 @@ def updateWordFrequencies(tokens):
             wordFrequencies[token] = 1
     return wordFrequencies
 
+
 def writeFrequencies(file, n=-1):
     with open(file, "w", encoding="utf-8") as f:
         with redirect_stdout(f):
             printFrequencies(wordFrequencies, n)
 
 
-
 def printFrequencies(frequencies, n=-1):
-    frequencies = dict(sorted(frequencies.items(), key=lambda item: item[1], reverse=True))
+    frequencies = dict(
+        sorted(frequencies.items(), key=lambda item: item[1], reverse=True)
+    )
     for key, value in frequencies.items():
         print(f"{key} {value}")
         n -= 1
         if n == 0:
             break
 
+
 def isStopWord(word):
-    stopWords = {'some', 'not', "we've", 'few', 'hers', 'should', "we're", 'was', 'ought', "they're", 'herself', "i'll", 'she', "she'd", 'do', 'in', 'himself', 'off', "here's", 'which', 'of', 'my', 'we', "don't", 'because', 'or', 'the', 'other', "there's", 'own', 'what', 'both', 'with', 'themselves', 'myself', 'all', 'into', "doesn't", "it's", "how's", 'once', 'between', 'by', 'down', "you'll", 'been', 'that', 'same', 'our', 'whom', 'ours', "they'll", 'am', "isn't", 'to', 'his', 'when', "aren't", 'cannot', 'very', 'her', 'you', 'have', 'most', 'if', 'a', 'are', 'it', 'how', 'did', "let's", 'at', 'does', "can't", 'has', 'here', "didn't", "they've", 'before', 'until', 'under', 'and', 'as', 'why', 'could', 'through', 'so', 'me', 'again', 'ourselves', "he's", "where's", "weren't", 'them', 'further', 'but', 'more', 'i', 'for', 'theirs', 'be', 'this', "she'll", 'your', "he'll", "you're", "shouldn't", 'is', "haven't", "i'm", "i've", 'him', 'no', 'being', 'those', 'on', 'below', 'then', 'were', "you've", "you'd", 'nor', 'doing', "we'd", "she's", "that's", 'itself', 'while', 'such', "when's", "shan't", 'too', "what's", 'during', 'who', 'yourself', 'against', "i'd", 'above', 'after', "mustn't", 'there', 'about', 'yours', 'from', 'over', 'out', 'any', 'they', "won't", 'each', 'up', "hasn't", 'only', 'an', "couldn't", "he'd", 'where', 'having', "wouldn't", 'yourselves', "who's", 'its', 'their', "wasn't", 'had', "they'd", 'would', "why's", 'he', 'than', "hadn't", "we'll", 'these'}
+    stopWords = {
+        "some",
+        "not",
+        "we've",
+        "few",
+        "hers",
+        "should",
+        "we're",
+        "was",
+        "ought",
+        "they're",
+        "herself",
+        "i'll",
+        "she",
+        "she'd",
+        "do",
+        "in",
+        "himself",
+        "off",
+        "here's",
+        "which",
+        "of",
+        "my",
+        "we",
+        "don't",
+        "because",
+        "or",
+        "the",
+        "other",
+        "there's",
+        "own",
+        "what",
+        "both",
+        "with",
+        "themselves",
+        "myself",
+        "all",
+        "into",
+        "doesn't",
+        "it's",
+        "how's",
+        "once",
+        "between",
+        "by",
+        "down",
+        "you'll",
+        "been",
+        "that",
+        "same",
+        "our",
+        "whom",
+        "ours",
+        "they'll",
+        "am",
+        "isn't",
+        "to",
+        "his",
+        "when",
+        "aren't",
+        "cannot",
+        "very",
+        "her",
+        "you",
+        "have",
+        "most",
+        "if",
+        "a",
+        "are",
+        "it",
+        "how",
+        "did",
+        "let's",
+        "at",
+        "does",
+        "can't",
+        "has",
+        "here",
+        "didn't",
+        "they've",
+        "before",
+        "until",
+        "under",
+        "and",
+        "as",
+        "why",
+        "could",
+        "through",
+        "so",
+        "me",
+        "again",
+        "ourselves",
+        "he's",
+        "where's",
+        "weren't",
+        "them",
+        "further",
+        "but",
+        "more",
+        "i",
+        "for",
+        "theirs",
+        "be",
+        "this",
+        "she'll",
+        "your",
+        "he'll",
+        "you're",
+        "shouldn't",
+        "is",
+        "haven't",
+        "i'm",
+        "i've",
+        "him",
+        "no",
+        "being",
+        "those",
+        "on",
+        "below",
+        "then",
+        "were",
+        "you've",
+        "you'd",
+        "nor",
+        "doing",
+        "we'd",
+        "she's",
+        "that's",
+        "itself",
+        "while",
+        "such",
+        "when's",
+        "shan't",
+        "too",
+        "what's",
+        "during",
+        "who",
+        "yourself",
+        "against",
+        "i'd",
+        "above",
+        "after",
+        "mustn't",
+        "there",
+        "about",
+        "yours",
+        "from",
+        "over",
+        "out",
+        "any",
+        "they",
+        "won't",
+        "each",
+        "up",
+        "hasn't",
+        "only",
+        "an",
+        "couldn't",
+        "he'd",
+        "where",
+        "having",
+        "wouldn't",
+        "yourselves",
+        "who's",
+        "its",
+        "their",
+        "wasn't",
+        "had",
+        "they'd",
+        "would",
+        "why's",
+        "he",
+        "than",
+        "hadn't",
+        "we'll",
+        "these",
+    }
     return word in stopWords
 
 
@@ -220,6 +417,7 @@ def writeUniquePageCounter(file):
     with open(file, "w", encoding="utf-8") as f:
         with redirect_stdout(f):
             print(len(seen_urls))
+
 
 def writeLongestPageLength(file, url, longestPage, text):
     with open(file, "w", encoding="utf-8") as f:
