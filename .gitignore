@@ -113,3 +113,4 @@ venv.bak/
 frequencies.txt
 unique_pages.txt
 longest_page.txt
+subdomains.txt

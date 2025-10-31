@@ -12,6 +12,7 @@ seen_urls = set()
 wordFrequencies = dict()
 longestPage = 0
 logger = get_logger("scraper")
+subdomains = dict()
 
 def scraper(url, resp):
     try:
@@ -130,16 +131,39 @@ def is_valid(url):
 
 
 def logPageInfo(text, url, longestPage):
+    parsed = urlparse(url)
+
     seen_urls.add(url)
     writeUniquePageCounter("unique_pages.txt")
+
     tokenized = tokenize(text)
     updateWordFrequencies(tokenized)
     writeFrequencies("frequencies.txt", 50)
+
+    updateSubdomains(parsed.hostname)
+    writeSubdomains("subdomains.txt")
+
     if len(tokenized) > longestPage:
         longestPage = len(tokenized)
         writeLongestPageLength("longest_page.txt", url, longestPage, text)
     return longestPage
 
+
+def updateSubdomains(hostname):
+    if hostname in subdomains:
+        subdomains[hostname] += 1
+    else:
+        subdomains[hostname] = 1
+
+def printSubdomains():
+    frequencies = dict(sorted(subdomains.items(), key=lambda item: item[1], reverse=True))
+    for key, value in frequencies.items():
+        print(f"{key}, {value}")
+
+def writeSubdomains(file):
+    with open(file, "w", encoding="utf-8") as f:
+        with redirect_stdout(f):
+            printSubdomains()
 
 
 def tokenize(text):
@@ -176,6 +200,7 @@ def writeFrequencies(file, n=-1):
     with open(file, "w", encoding="utf-8") as f:
         with redirect_stdout(f):
             printFrequencies(wordFrequencies, n)
+
 
 
 def printFrequencies(frequencies, n=-1):
