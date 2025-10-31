@@ -135,13 +135,13 @@ def tokenize(text):
         elif (letter == "." and i < len(text) - 1 and text[i + 1] != " "):
             word += letter
         else:
-            if len(word):
+            if len(word) >= 2:
                 for letter in word:
                     if letter.isalnum():
                         tokens.append(word)
                         break
                 word = ''
-    if len(word):
+    if len(word) >= 2:
         tokens.append(word)
     return tokens
 
