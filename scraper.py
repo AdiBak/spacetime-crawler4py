@@ -95,7 +95,7 @@ def is_valid(url):
 
         if any(sub in parsed.netloc for sub in [
             "wics.ics.uci.edu", 
-            "www.physics.uci.edu"
+            "www.physics.uci.edu",
             "ngs.ics.uci.edu",
             "www.cecs.uci.edu"
         ]):
