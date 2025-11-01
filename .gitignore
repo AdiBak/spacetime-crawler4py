@@ -108,3 +108,9 @@ venv.bak/
 
 *.full.py
 *.shelve
+
+# txt files used for report data
+frequencies.txt
+unique_pages.txt
+longest_page.txt
+subdomains.txt
