@@ -88,9 +88,6 @@ def is_valid(url):
         if parsed.scheme not in {"http", "https"}:
             return False
 
-        if parsed.hostname.endswith("physics.uci.edu"):
-            print("sdiohfdsiofhdsiofhdsiohdsihofds\n\n\n\n\n\n")
-
         if not parsed.hostname or (
             not parsed.hostname.endswith(
                 (".ics.uci.edu", ".cs.uci.edu", ".informatics.uci.edu", ".stat.uci.edu")
@@ -104,7 +101,6 @@ def is_valid(url):
             sub in parsed.netloc
             for sub in [
                 "wics.ics.uci.edu",
-                # "www.physics.uci.edu",
                 "ngs.ics.uci.edu",
                 "www.cecs.uci.edu",
             ]
